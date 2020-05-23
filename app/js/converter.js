@@ -1,6 +1,192 @@
 /* global md5, asciidoctor, XMLHttpRequest, Asciidoctor, AsciidoctorKroki */
 const processor = Asciidoctor({ runtime: { platform: 'browser' } })
 
+class AsciidoctorBrowserExtensionHtml5Converter {
+  constructor () {
+    this.baseConverter = asciidoctor.Html5Converter.$new()
+  }
+
+  convert (node, transform) {
+    if (node.getNodeName() === 'document') {
+      const bodyAttrs = node.getId() ? [`id="${node.getId()}"`] : []
+      let classes
+      const sectioned = node.hasSection()
+      if (sectioned && node.isAttribute('toc-class') && node.isAttribute('toc') &&  node.isAttribute('toc-placement', 'auto')) {
+        classes = [node.getDoctype(), node.getAttribute('toc-class'), `toc-${node.getAttribute('toc-position', 'header')}`]
+      } else {
+        classes = [node.getDoctype()]
+      }
+      if (node.hasRole()) {
+        classes.push(node.getRole())
+      }
+      bodyAttrs.push(`class="${classes.join(' ')}"`)
+      if (node.isAttribute('max-width')) {
+        bodyAttrs.push(`style=""max-width: ${node.getAttribute('max-width')};"`)
+      }
+      const result = []
+      result.push(`<body ${bodyAttrs.join(' ')}>`)
+      if (!node.getNoheader()) {
+        result.push('<div id="header">')
+        if (node.getDoctype() === 'manpage') {
+          result.push(`<h1>${node.getDocumentTitle()} Manual Page</h1>`)
+          if (sectioned && node.isAttribute('toc') && node.isAttribute('toc-placement', 'auto')) {
+            result.push(`<div id="toc" class="${node.getAttribute('toc-class', 'toc')}">`)
+          }
+        }
+      }
+      unless node.noheader
+      result <<
+      if node.doctype == 'manpage'
+        result << %(<h1>#{node.doctitle} Manual Page</h1>)
+      if sectioned && (node.attr? 'toc') && (node.attr? 'toc-placement', 'auto')
+        result << %(<div id="toc" class="#{node.attr 'toc-class', 'toc'}">
+        <div id="toctitle">#{node.attr 'toc-title'}</div>
+        #{node.converter.convert node, 'outline'}
+        </div>)
+      end
+      result << (generate_manname_section node) if node.attr? 'manpurpose'
+      else
+      if node.header?
+        result << %(<h1>#{node.header.title}</h1>) unless node.notitle
+        details = []
+        idx = 1
+      node.authors.each do |author|
+      details << %(<span id="author#{idx > 1 ? idx : ''}" class="author">#{node.sub_replacements author.name}</span>#{br})
+      details << %(<span id="email#{idx > 1 ? idx : ''}" class="email">#{node.sub_macros author.email}</span>#{br}) if author.email
+      idx += 1
+      end
+      if node.attr? 'revnumber'
+        details << %(<span id="revnumber">#{((node.attr 'version-label') || '').downcase} #{node.attr 'revnumber'}#{(node.attr? 'revdate') ? ',' : ''}</span>)
+      end
+      if node.attr? 'revdate'
+        details << %(<span id="revdate">#{node.attr 'revdate'}</span>)
+      end
+      if node.attr? 'revremark'
+        details << %(#{br}<span id="revremark">#{node.attr 'revremark'}</span>)
+      end
+      unless details.empty?
+        result << '<div class="details">'
+        result.concat details
+      result << '</div>'
+      end
+      end
+
+      if sectioned && (node.attr? 'toc') && (node.attr? 'toc-placement', 'auto')
+        result << %(<div id="toc" class="#{node.attr 'toc-class', 'toc'}">
+        <div id="toctitle">#{node.attr 'toc-title'}</div>
+        #{node.converter.convert node, 'outline'}
+        </div>)
+      end
+      end
+      result << '</div>'
+      end
+
+      result << %(<div id="content">
+        #{node.content}
+        </div>)
+
+      if node.footnotes? && !(node.attr? 'nofootnotes')
+      result << %(<div id="footnotes">
+        <hr#{slash}>)
+      node.footnotes.each do |footnote|
+      result << %(<div class="footnote" id="_footnotedef_#{footnote.index}">
+        <a href="#_footnoteref_#{footnote.index}">#{footnote.index}</a>. #{footnote.text}
+        </div>)
+      end
+      result << '</div>'
+      end
+
+      unless node.nofooter
+      result << '<div id="footer">'
+      result << '<div id="footer-text">'
+      result << %(#{node.attr 'version-label'} #{node.attr 'revnumber'}#{br}) if node.attr? 'revnumber'
+        result << %(#{node.attr 'last-update-label'} #{node.attr 'docdatetime'}) if (node.attr? 'last-update-label') && !(node.attr? 'reproducible')
+      result << '</div>'
+      result << '</div>'
+      end
+
+      # JavaScript (and auxiliary stylesheets) loaded at the end of body for performance reasons
+      # See http://www.html5rocks.com/en/tutorials/speed/script-loading/
+
+        if syntax_hl
+          if syntax_hl.docinfo? :head
+            result[syntax_hl_docinfo_head_idx] = syntax_hl.docinfo :head, node, cdn_base_url: cdn_base_url, linkcss: linkcss, self_closing_tag_slash: slash
+    else
+      result.delete_at syntax_hl_docinfo_head_idx
+      end
+      if syntax_hl.docinfo? :footer
+        result << (syntax_hl.docinfo :footer, node, cdn_base_url: cdn_base_url, linkcss: linkcss, self_closing_tag_slash: slash)
+      end
+      end
+
+      if node.attr? 'stem'
+        eqnums_val = node.attr 'eqnums', 'none'
+      eqnums_val = 'AMS' if eqnums_val.empty?
+        eqnums_opt = %( equationNumbers: { autoNumber: "#{eqnums_val}" } )
+      # IMPORTANT inspect calls on delimiter arrays are intentional for JavaScript compat (emulates JSON.stringify)
+      result << %(<script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+          messageStyle: "none",
+          tex2jax: {
+            inlineMath: [#{INLINE_MATH_DELIMITERS[:latexmath].inspect}],
+            displayMath: [#{BLOCK_MATH_DELIMITERS[:latexmath].inspect}],
+            ignoreClass: "nostem|nolatexmath"
+          },
+          asciimath2jax: {
+            delimiters: [#{BLOCK_MATH_DELIMITERS[:asciimath].inspect}],
+            ignoreClass: "nostem|noasciimath"
+          },
+          TeX: {#{eqnums_opt}}
+        })
+      MathJax.Hub.Register.StartupHook("AsciiMath Jax Ready", function () {
+        MathJax.InputJax.AsciiMath.postfilterHooks.Add(function (data, node) {
+          if ((node = data.script.parentNode) && (node = node.parentNode) && node.classList.contains("stemblock")) {
+            data.math.root.display = "block"
+          }
+          return data
+        })
+      })
+      </script>
+      <script src="#{cdn_base_url}/mathjax/#{MATHJAX_VERSION}/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>)
+      end
+
+      unless (docinfo_content = node.docinfo :footer).empty?
+        result << docinfo_content
+        end
+
+      result << '</body>'
+      result << '</html>'
+      result.join LF
+      end
+
+
+
+
+
+    }
+    return this.baseConverter.convert(node, transform)
+  }
+}
+
+  convert (node, transform) {
+    const nodeName = transform || node.getNodeName()
+    if (nodeName === 'embedded') {
+      return `<embedded>
+${node.getContent()}
+</embedded>`
+    } else if (nodeName === 'document') {
+      return `<document>
+${node.getContent()}
+</document>`
+    } else if (nodeName === 'section') {
+      return `${node.getTitle()}`
+    }
+    return ''
+  }
+}
+
+processor.ConverterFactory.register(new AsciidoctorBrowserExtensionHtml5Converter(), ['html5'])
+
 asciidoctor.browser.converter = (webExtension, Constants, Settings) => {
   const module = {}
 
@@ -8,19 +194,45 @@ asciidoctor.browser.converter = (webExtension, Constants, Settings) => {
     const settings = await Settings.getRenderingSettings()
     const options = buildAsciidoctorOptions(settings, url)
     const doc = processor.load(source, options)
+    /*
     if (showTitle(doc)) {
       doc.setAttribute('showtitle')
     }
+     */
+    doc.setAttribute('noheader')
+    doc.setAttribute('notitle')
     if (isSourceHighlighterEnabled(doc)) {
       // Force the source highlighter to Highlight.js (since we only support Highlight.js)
       doc.setAttribute('source-highlighter', 'highlight.js')
     }
+    const authors = doc.getAuthors().map((author) => {
+      let email
+      if (author.getEmail()) {
+        email = doc.$sub_macros(author.getEmail())
+      }
+      return {
+        name: doc.$sub_replacements(author.getName()),
+        firstName: author.getFirstName(),
+        middleName: author.getMiddleName(),
+        lastName: author.getLastName(),
+        initials: author.getInitials(),
+        email
+      }
+    })
+    const revisionInfo = doc.getRevisionInfo()
     return {
       html: doc.convert(),
       text: source,
       title: doc.getDoctitle({ use_fallback: true }),
       doctype: doc.getDoctype(),
       attributes: {
+        noHeader: doc.getNoheader(),
+        noTitle: doc.getNotitle(),
+        noFooter: doc.getNofooter(),
+        authors,
+        revisionInfo,
+        documentTitle: doc.getDocumentTitle(),
+        versionLabel: doc.getAttribute('version-label', '').toLowerCase(),
         tocPosition: doc.getAttribute('toc-position'),
         isSourceHighlighterEnabled: isSourceHighlighterEnabled(doc),
         isStemEnabled: isStemEnabled(doc),
@@ -251,3 +463,5 @@ asciidoctor.browser.converter = (webExtension, Constants, Settings) => {
 
   return module
 }
+
+

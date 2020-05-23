@@ -171,26 +171,26 @@ window.MathJax = {
 
   /**
    * Update the HTML document with the Asciidoctor document
-   * @param backgroundConverterResponse The response sent by the background script
+   * @param converterResponse The response sent by the converter script
    * @param scripts The scripts to restore
    */
-  const updateBodyHTML = async (backgroundConverterResponse, scripts) => {
-    const attributes = backgroundConverterResponse.attributes
+  const updateBodyHTML = async (converterResponse, scripts) => {
+    const attributes = converterResponse.attributes
     if (attributes.isFontIcons) {
       appendFontAwesomeStyle()
     }
     await appendStyles(attributes.stylesheet)
     appendChartistStyle()
 
-    const title = backgroundConverterResponse.title
-    const doctype = backgroundConverterResponse.doctype
+    const title = converterResponse.title
+    const doctype = converterResponse.doctype
     const maxWidth = attributes.maxWidth
 
     document.title = Dom.decodeEntities(title)
     if (maxWidth) {
       document.body.style.maxWidth = maxWidth
     }
-    updateContent(backgroundConverterResponse.html)
+    updateContent(converterResponse.html)
     let tocClassNames = ''
     if (attributes.tocPosition === 'left' || attributes.tocPosition === 'right') {
       tocClassNames = ` toc2 toc-${attributes.tocPosition}`
@@ -200,6 +200,19 @@ window.MathJax = {
       }
     }
     document.body.className = `${doctype}${tocClassNames}`
+    const headerDetails = buildHeaderDetails(attributes.authors, attributes.revisionInfo, attributes.versionLabel)
+    if (headerDetails) {
+      const detailsElement = document.createElement('div')
+      detailsElement.className = 'details'
+      detailsElement.innerHTML = headerDetails
+      const headerElement = document.createElement('div')
+      headerElement.id = 'header'
+      const documentTitleElement = document.createElement('h1')
+      documentTitleElement.innerText = attributes.documentTitle
+      headerElement.appendChild(documentTitleElement)
+      headerElement.appendChild(detailsElement)
+      document.body.prepend(headerElement)
+    }
 
     forceLoadDynamicObjects()
     if (attributes.isStemEnabled) {
@@ -213,6 +226,36 @@ window.MathJax = {
       syntaxHighlighting()
     }
     drawCharts()
+  }
+
+  const buildHeaderDetails = (authors, revisionInfo, versionLabel) => {
+    const details = []
+    let idx = 1
+    authors.map((author) => {
+      details.push(`<span id="author${idx > 1 ? idx : ''}" class="author">${author.name}</span><br/>`)
+      if (author.email) {
+        details.push(`<span id="email${idx > 1 ? idx : ''}" class="email">${author.email}</span><br/>`)
+      }
+      idx++
+    })
+    console.log(revisionInfo)
+    if (revisionInfo) {
+      const revisionDate = revisionInfo.date
+      const revisionRemark = revisionInfo.remark
+      if (revisionInfo.number) {
+        details.push(`<span id="revnumber">${versionLabel} ${revisionInfo.number}${revisionDate ? ',' : ''}</span>`)
+      }
+      if (revisionDate) {
+        details.push(`<span id="revdate">${revisionDate}</span>`)
+      }
+      if (revisionRemark) {
+        details.push(`<br/><span id="revremark">${revisionRemark}</span>`)
+      }
+    }
+    if (details.length > 0) {
+      return details.join('')
+    }
+    return ''
   }
 
   /**
